@@ -1,0 +1,2 @@
+# Keep Render's default root-level install command working.
+-r backend/requirements.txt
