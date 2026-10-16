@@ -1,0 +1,544 @@
+"""
+Script to compile all 18 numbered benchmark tables from the research paper:
+"Secure coding with AI - from detection to repair"
+Empirical Software Engineering (2026) 31:93
+DOI: 10.1007/s10664-026-10812-8
+"""
+
+import json
+import csv
+import os
+
+TABLES = [
+    {
+        "table_number": 1,
+        "title": "Literature review paper comparison",
+        "page": 7,
+        "category": "Literature-review comparisons",
+        "columns": ["Paper", "Programming Languages", "Static scanners", "Real-life code example or lab generated", "Detection", "Generation"],
+        "rows": [
+            {"Paper": "This paper", "Programming Languages": "C/C++, C#", "Static scanners": "Semgrep, Flawfinder, Snyk, CPPCheck", "Real-life code example or lab generated": "DevGPT dataset", "Detection": "Yes", "Generation": "Yes"},
+            {"Paper": "Bakhshandeh et al. (2023)", "Programming Languages": "Python", "Static scanners": "Bandit, Semgrep, SonarQube", "Real-life code example or lab generated": "Real datasets: securityEval, PyT", "Detection": "Yes", "Generation": "No"},
+            {"Paper": "Jamdade and Liu (2024)", "Programming Languages": "TypeScript", "Static scanners": "No", "Real-life code example or lab generated": "Specifically generated", "Detection": "Yes", "Generation": "Yes"},
+            {"Paper": "Khoury et al. (2023)", "Programming Languages": "C, C++, Python, HTML, and Java", "Static scanners": "No, manual review", "Real-life code example or lab generated": "Specifically generated", "Detection": "Yes", "Generation": "Yes"},
+            {"Paper": "Hamer et al. (2024)", "Programming Languages": "Java", "Static scanners": "CodeQL", "Real-life code example or lab generated": "Specifically generated, StackOverflow used to collect examples of code produced by humans", "Detection": "No", "Generation": "Yes"},
+            {"Paper": "Kharma et al. (2025)", "Programming Languages": "C, C++, Java, and Python", "Static scanners": "SonarQube", "Real-life code example or lab generated": "Specifically generated", "Detection": "No", "Generation": "Yes"},
+            {"Paper": "Motaleb and Manik (2025)", "Programming Languages": "Python", "Static scanners": "Pylink, Flake8", "Real-life code example or lab generated": "Specifically generated", "Detection": "No", "Generation": "Yes"},
+            {"Paper": "Almanasra and Suwais (2025)", "Programming Languages": "Java, Python", "Static scanners": "Leetcode to test memory and speed efficiency", "Real-life code example or lab generated": "Specifically generated", "Detection": "No", "Generation": "Yes"},
+            {"Paper": "Wu et al. (2023)", "Programming Languages": "C, C++, Java, Go, and Python", "Static scanners": "Manual checks", "Real-life code example or lab generated": "Specifically generated", "Detection": "Yes", "Generation": "Yes"},
+            {"Paper": "Cheshkov et al. (2023)", "Programming Languages": "Java", "Static scanners": "Manual checks", "Real-life code example or lab generated": "Samples from GitHub", "Detection": "Yes", "Generation": "No"},
+            {"Paper": "Fu et al. (2023a)", "Programming Languages": "C/C++", "Static scanners": "AIBugHunter, CodeBERT, GraphCodeBERT, and VulExplainer were used as static scanners", "Real-life code example or lab generated": "Real life datasets Big-Vul and CVEFixes", "Detection": "Yes", "Generation": "Yes"},
+            {"Paper": "Kholoosi et al. (2024)", "Programming Languages": "12 different languages", "Static scanners": "No", "Real-life code example or lab generated": "National Vulnerability Database (NVD)", "Detection": "Yes", "Generation": "No"},
+            {"Paper": "Sajadi et al. (2025)", "Programming Languages": "Python and JavaScript", "Static scanners": "CodeQL", "Real-life code example or lab generated": "Stack Overflow data", "Detection": "Yes", "Generation": "No"},
+            {"Paper": "Yu et al. (2024)", "Programming Languages": "13 programming languages including Python, C++, Java, C#, Go, JS, Kotlin, etc.", "Static scanners": "CodeQL", "Real-life code example or lab generated": "Specifically generated", "Detection": "Yes", "Generation": "Yes"}
+        ],
+        "notes": "Surveys 14 papers comparing programming languages, static scanners, dataset origin, detection and generation evaluations."
+    },
+    {
+        "table_number": 2,
+        "title": "DevGPT dataset information with breakdown by dataset snapshots",
+        "page": 10,
+        "category": "Dataset statistics",
+        "columns": ["Metric name", "DevGPT snapshot_20231012", "DevGPT snapshot_20240514", "Total number of items"],
+        "rows": [
+            {"Metric name": "Separate GPT interaction cases (sharings)", "DevGPT snapshot_20231012": 4733, "DevGPT snapshot_20240514": 5645, "Total number of items": 10378},
+            {"Metric name": "Conversation steps", "DevGPT snapshot_20231012": 27093, "DevGPT snapshot_20240514": 23835, "Total number of items": 50928},
+            {"Metric name": "Source code files", "DevGPT snapshot_20231012": 19106, "DevGPT snapshot_20240514": 19907, "Total number of items": 39013}
+        ],
+        "notes": "Summarizes DevGPT version 10 across snapshots snapshot_20231012 and snapshot_20240514."
+    },
+    {
+        "table_number": 3,
+        "title": "Programming languages in DevGPT dataset with breakdown by dataset snapshots",
+        "page": 10,
+        "category": "Dataset statistics",
+        "columns": ["Programming language", "DevGPT snapshot_20231012", "DevGPT snapshot_20240514", "Total number of files"],
+        "rows": [
+            {"Programming language": "Python", "DevGPT snapshot_20231012": 3041, "DevGPT snapshot_20240514": 3864, "Total number of files": 6905},
+            {"Programming language": "Java script", "DevGPT snapshot_20231012": 2401, "DevGPT snapshot_20240514": 2476, "Total number of files": 4877},
+            {"Programming language": "bash", "DevGPT snapshot_20231012": 2166, "DevGPT snapshot_20240514": 1750, "Total number of files": 2166, "source_note": "Discrepancy in original paper: 2166+1750 != 2166; original paper prints 2166 as total."},
+            {"Programming language": "HTML", "DevGPT snapshot_20231012": 1055, "DevGPT snapshot_20240514": 1050, "Total number of files": 2105},
+            {"Programming language": "Unix shell", "DevGPT snapshot_20231012": 751, "DevGPT snapshot_20240514": 1203, "Total number of files": 1954},
+            {"Programming language": "Java", "DevGPT snapshot_20231012": 461, "DevGPT snapshot_20240514": 833, "Total number of files": 1294},
+            {"Programming language": "C++", "DevGPT snapshot_20231012": 544, "DevGPT snapshot_20240514": 700, "Total number of files": 1244},
+            {"Programming language": "C#", "DevGPT snapshot_20231012": 898, "DevGPT snapshot_20240514": 198, "Total number of files": 1096},
+            {"Programming language": "CSS", "DevGPT snapshot_20231012": 641, "DevGPT snapshot_20240514": 297, "Total number of files": 938},
+            {"Programming language": "Swift", "DevGPT snapshot_20231012": 487, "DevGPT snapshot_20240514": 72, "Total number of files": 559},
+            {"Programming language": "Rust", "DevGPT snapshot_20231012": 232, "DevGPT snapshot_20240514": 317, "Total number of files": 549},
+            {"Programming language": "Go", "DevGPT snapshot_20231012": 354, "DevGPT snapshot_20240514": 169, "Total number of files": 523},
+            {"Programming language": "C", "DevGPT snapshot_20231012": 144, "DevGPT snapshot_20240514": 210, "Total number of files": 354}
+        ],
+        "notes": "Shows language distribution across snapshots. Note recorded on bash total."
+    },
+    {
+        "table_number": 4,
+        "title": "Number of code lines for selected programming languages with breakdown by dataset snapshots",
+        "page": 10,
+        "category": "Dataset statistics",
+        "columns": ["Language", "DevGPT snapshot_20231012 Files", "DevGPT snapshot_20231012 Lines", "DevGPT snapshot_20240514 Files", "DevGPT snapshot_20240514 Lines", "Total Files", "Total Lines"],
+        "rows": [
+            {"Language": "C", "DevGPT snapshot_20231012 Files": 121, "DevGPT snapshot_20231012 Lines": 1784, "DevGPT snapshot_20240514 Files": 204, "DevGPT snapshot_20240514 Lines": 5665, "Total Files": 325, "Total Lines": 7449},
+            {"Language": "C++", "DevGPT snapshot_20231012 Files": 427, "DevGPT snapshot_20231012 Lines": 7559, "DevGPT snapshot_20240514 Files": 563, "DevGPT snapshot_20240514 Lines": 12310, "Total Files": 990, "Total Lines": 19869},
+            {"Language": "C#", "DevGPT snapshot_20231012 Files": 829, "DevGPT snapshot_20231012 Lines": 14824, "DevGPT snapshot_20240514 Files": 171, "DevGPT snapshot_20240514 Lines": 2801, "Total Files": 1000, "Total Lines": 17625}
+        ],
+        "notes": "Analyzed subset of 2,315 source files (44,943 lines of code) across C, C++, and C#."
+    },
+    {
+        "table_number": 5,
+        "title": "Static scanners selected for analysis",
+        "page": 12,
+        "category": "Tool configuration or comparison",
+        "columns": ["Scanner", "Version", "Programming languages", "Is free or trial available", "Web site"],
+        "rows": [
+            {"Scanner": "Snyk", "Version": "1.1294.0", "Programming languages": "C#, C, C++", "Is free or trial available": "Yes", "Web site": "Snyk scanner (2024)"},
+            {"Scanner": "Semgrep", "Version": "1.87.0", "Programming languages": "C#, C, C++", "Is free or trial available": "Yes", "Web site": "Semgrep scanner (2024)"},
+            {"Scanner": "FlawFinder", "Version": "2.0.19", "Programming languages": "C, C++", "Is free or trial available": "Yes", "Web site": "Flawfinder scanner (2024)"},
+            {"Scanner": "CppCheck", "Version": "2.14.0", "Programming languages": "C, C++", "Is free or trial available": "Yes", "Web site": "CppCheck scanner (2024)"}
+        ],
+        "notes": "Four static code scanners evaluated for C-family language vulnerability analysis."
+    },
+    {
+        "table_number": 6,
+        "title": "Static scanning results",
+        "page": 12,
+        "category": "Quantitative benchmark results",
+        "columns": ["Scanner", "Number of detects", "Errors", "Warnings", "Notes/Info"],
+        "rows": [
+            {"Scanner": "Snyk", "Number of detects": 153, "Errors": 1, "Warnings": 150, "Notes/Info": 2},
+            {"Scanner": "Semgrep", "Number of detects": 56, "Errors": 0, "Warnings": 56, "Notes/Info": 0},
+            {"Scanner": "Flawfinder", "Number of detects": 679, "Errors": 20, "Warnings": 23, "Notes/Info": 633},
+            {"Scanner": "CppCheck", "Number of detects": 71, "Errors": 0, "Warnings": 71, "Notes/Info": 0},
+            {"Scanner": "Total", "Number of detects": 959, "Errors": 21, "Warnings": 300, "Notes/Info": 635}
+        ],
+        "notes": "Raw detections from 2,315 files across DevGPT snapshots snapshot_20231012 and snapshot_20240514."
+    },
+    {
+        "table_number": 7,
+        "title": "Number of detects statistics per line of code",
+        "page": 12,
+        "category": "Quantitative benchmark results",
+        "columns": ["Scanner", "Languages", "Files", "Lines of code", "Detects", "Number of files per detect", "Lines of code per detect"],
+        "rows": [
+            {"Scanner": "Snyk", "Languages": "C#, C, C++", "Files": 2315, "Lines of code": 44943, "Detects": 153, "Number of files per detect": 15.1, "Lines of code per detect": 293.7},
+            {"Scanner": "Semgrep", "Languages": "C#, C, C++", "Files": 2315, "Lines of code": 44943, "Detects": 56, "Number of files per detect": 41.3, "Lines of code per detect": 802.6},
+            {"Scanner": "FlawFinder", "Languages": "C, C++", "Files": 1315, "Lines of code": 27318, "Detects": 679, "Number of files per detect": 1.9, "Lines of code per detect": 40.2},
+            {"Scanner": "CppCheck", "Languages": "C, C++", "Files": 1315, "Lines of code": 27318, "Detects": 71, "Number of files per detect": 18.5, "Lines of code per detect": 384.8}
+        ],
+        "notes": "Detection density per scanner relative to eligible language file counts and code lines."
+    },
+    {
+        "table_number": 8,
+        "title": "CWE distribution",
+        "page": 14,
+        "category": "Vulnerability classifications",
+        "columns": ["CWE", "Description", "No. of CWEs", "Top 25 CWE position"],
+        "rows": [
+            {"CWE": "CWE-20", "Description": "Improper Input Validation", "No. of CWEs": 16, "Top 25 CWE position": "12"},
+            {"CWE": "CWE-22", "Description": "Improper Pathname Validation", "No. of CWEs": 3, "Top 25 CWE position": "5"},
+            {"CWE": "CWE-61", "Description": "Symlink Following", "No. of CWEs": 1, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-78", "Description": "OS Command Injection", "No. of CWEs": 1, "Top 25 CWE position": "7"},
+            {"CWE": "CWE-119", "Description": "Bounds of a Memory Buffer", "No. of CWEs": 4, "Top 25 CWE position": "20"},
+            {"CWE": "CWE-120", "Description": "Classic Buffer Overflow", "No. of CWEs": 11, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-126", "Description": "Buffer Over-read", "No. of CWEs": 1, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-129", "Description": "Improper Validation of Array Index", "No. of CWEs": 2, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-190", "Description": "Integer Overflow", "No. of CWEs": 2, "Top 25 CWE position": "23"},
+            {"CWE": "CWE-203", "Description": "Observable Discrepancy", "No. of CWEs": 1, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-252", "Description": "Unchecked Return Value", "No. of CWEs": 2, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-319", "Description": "HTTP usage", "No. of CWEs": 1, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-327", "Description": "Use of a Broken or Risky Cryptographic Algorithm", "No. of CWEs": 2, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-328", "Description": "Use of Weak Hash", "No. of CWEs": 1, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-362", "Description": "Race Condition", "No. of CWEs": 7, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-385", "Description": "Covert Timing Channel", "No. of CWEs": 1, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-401", "Description": "Missing Release of Memory", "No. of CWEs": 1, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-561", "Description": "Dead Code", "No. of CWEs": 1, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-663", "Description": "Use of a Non-reentrant Function in a Concurrent Context", "No. of CWEs": 1, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-665", "Description": "Improper Initialization", "No. of CWEs": 3, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-686", "Description": "Function Call With Incorrect Argument Type", "No. of CWEs": 2, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-772", "Description": "Missing Release of Resource", "No. of CWEs": 1, "Top 25 CWE position": "-"},
+            {"CWE": "CWE-1164", "Description": "Irrelevant Code", "No. of CWEs": 1, "Top 25 CWE position": "-"},
+            {"CWE": "Total number", "Description": "Total CWE assignments across 56 confirmed vulnerabilities", "No. of CWEs": 66, "Top 25 CWE position": "-"}
+        ],
+        "notes": "66 CWE assignments across 56 confirmed vulnerabilities (some vulnerabilities assigned multiple CWEs). 6 CWEs are on the 2024 Top 25 list."
+    },
+    {
+        "table_number": 9,
+        "title": "Language statistics",
+        "page": 15,
+        "category": "Quantitative benchmark results",
+        "columns": ["Metric", "C", "C++", "C#"],
+        "rows": [
+            {"Metric": "Number of detected by Snyk", "C": "126", "C++": "25", "C#": "2"},
+            {"Metric": "Number of detected by Semgrep", "C": "49", "C++": "3", "C#": "4"},
+            {"Metric": "Number of detected by Flawfinder", "C": "528", "C++": "151", "C#": "-"},
+            {"Metric": "Number of detected by CppCheck", "C": "13", "C++": "58", "C#": "-"},
+            {"Metric": "Total files scanned", "C": "325", "C++": "990", "C#": "1000"},
+            {"Metric": "Total detected", "C": "716", "C++": "237", "C#": "6"},
+            {"Metric": "Number of lines of code (Cloc tool 2024)", "C": "7449", "C++": "19869", "C#": "17625"},
+            {"Metric": "Lines of code per detected issue", "C": "10.4", "C++": "83.8", "C#": "2937.5"}
+        ],
+        "notes": "Language comparison across C, C++, and C#. Flawfinder and CppCheck do not support C# and are marked as not reported ('-')."
+    },
+    {
+        "table_number": 10,
+        "title": "Detection matrix, October 2024",
+        "page": 18,
+        "category": "Experimental results",
+        "columns": ["Issue (Results GitHub repository 2025)", "CWE", "Lang", "S", "Sg", "F", "C", "G-4o"],
+        "rows": [
+            {"Issue (Results GitHub repository 2025)": "1/1a", "CWE": "772", "Lang": "C", "S": "✓", "Sg": "×", "F": "✓", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "1/1b", "CWE": "362", "Lang": "C", "S": "✓", "Sg": "×", "F": "✓", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "2/14", "CWE": "352", "Lang": "C#", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "3/29", "CWE": "20", "Lang": "C++", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "4/21", "CWE": "119/120", "Lang": "C", "S": "✓", "Sg": "×", "F": "✓", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "4/101", "CWE": "20", "Lang": "C", "S": "✓", "Sg": "×", "F": "✓", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "5/63", "CWE": "20", "Lang": "C#", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "6/8", "CWE": "190", "Lang": "C", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "7/39", "CWE": "20", "Lang": "C++", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "8/14", "CWE": "119/120", "Lang": "C", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "8/36", "CWE": "20", "Lang": "C", "S": "✓", "Sg": "✓", "F": "×", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "9/9", "CWE": "120/20", "Lang": "C", "S": "×", "Sg": "✓", "F": "✓", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "10/42", "CWE": "319", "Lang": "C++", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "11/40", "CWE": "22", "Lang": "C#", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "12/36", "CWE": "20", "Lang": "C", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "13/49", "CWE": "20", "Lang": "C", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "14/14", "CWE": "119/120", "Lang": "C", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "14/63", "CWE": "129", "Lang": "C", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "18/83", "CWE": "120", "Lang": "C", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "20/16", "CWE": "78", "Lang": "C", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "22/7", "CWE": "120/20", "Lang": "C++", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "23/9", "CWE": "120/20", "Lang": "C++", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "48/23", "CWE": "362", "Lang": "C++", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "49/9", "CWE": "61", "Lang": "C", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "49/27", "CWE": "203/385", "Lang": "C++", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "52/14", "CWE": "119/120", "Lang": "C", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4o": "✓"},
+            {"Issue (Results GitHub repository 2025)": "52/42", "CWE": "129", "Lang": "C", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "53/13", "CWE": "20", "Lang": "C++", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "54/2", "CWE": "126", "Lang": "C++", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "55/22", "CWE": "126", "Lang": "C", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "61/1", "CWE": "665", "Lang": "C++", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4o": "×"},
+            {"Issue (Results GitHub repository 2025)": "62/19", "CWE": "401/665", "Lang": "C++", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4o": "✓"}
+        ],
+        "notes": "Detection matrix for 32 confirmed issues in October 2024 experiment using snapshot_20231012. S=Snyk, Sg=Semgrep, F=Flawfinder, C=CppCheck, G-4o=GPT-4o."
+    },
+    {
+        "table_number": 11,
+        "title": "Security issues detection and fixing in source code from DevGPT snapshot 'snapshot_20231012', October 2024",
+        "page": 19,
+        "category": "Experimental results",
+        "columns": ["N/L (Results GitHub repository 2025)", "CWE", "Lang.", "Source", "Scanner", "Severity", "GPT-4o Detected", "GPT-4o Fixed"],
+        "rows": [
+            {"N/L (Results GitHub repository 2025)": "1/1a", "CWE": "772", "Lang.": "C", "Source": "gpt3.5", "Scanner": "snyk", "Severity": "note", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "1/1b", "CWE": "362", "Lang.": "C", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "2/14", "CWE": "352", "Lang.": "C#", "Source": "gpt3.5", "Scanner": "snyk", "Severity": "note", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "3/29", "CWE": "20", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "snyk", "Severity": "warning", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "4/21", "CWE": "119/120", "Lang.": "C", "Source": "gpt4", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "4/101", "CWE": "20", "Lang.": "C", "Source": "gpt4", "Scanner": "snyk", "Severity": "warning", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "5/63", "CWE": "20", "Lang.": "C#", "Source": "user", "Scanner": "snyk", "Severity": "warning", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "6/8", "CWE": "190", "Lang.": "C", "Source": "user", "Scanner": "snyk", "Severity": "warning", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "7/39", "CWE": "20", "Lang.": "C++", "Source": "LLM", "Scanner": "snyk", "Severity": "warning", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "8/14", "CWE": "119/120", "Lang.": "C", "Source": "gpt4", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "8/36", "CWE": "20", "Lang.": "C", "Source": "gpt4", "Scanner": "snyk, semgrep", "Severity": "warning", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "9/9", "CWE": "120/20", "Lang.": "C", "Source": "gpt3.5", "Scanner": "semgrep, flawfinder", "Severity": "error, warning", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "10/42", "CWE": "319", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "semgrep", "Severity": "warning", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "11/40", "CWE": "22", "Lang.": "C#", "Source": "user", "Scanner": "semgrep", "Severity": "warning", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "12/36", "CWE": "20", "Lang.": "C", "Source": "user", "Scanner": "semgrep", "Severity": "warning", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "13/49", "CWE": "20", "Lang.": "C", "Source": "user", "Scanner": "semgrep", "Severity": "warning", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "14/14", "CWE": "119/120", "Lang.": "C", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "14/63", "CWE": "129", "Lang.": "C", "Source": "gpt3.5", "Scanner": "semgrep", "Severity": "warning", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "18/83", "CWE": "120", "Lang.": "C", "Source": "user", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "20/16", "CWE": "78", "Lang.": "C", "Source": "user", "Scanner": "flawfinder", "Severity": "error", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "22/7", "CWE": "120/20", "Lang.": "C++", "Source": "user", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "23/9", "CWE": "120/20", "Lang.": "C++", "Source": "user", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "48/23", "CWE": "362", "Lang.": "C++", "Source": "gpt4", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "49/9", "CWE": "61", "Lang.": "C", "Source": "gpt3.5", "Scanner": "cppcheck", "Severity": "note", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "49/27", "CWE": "203/385", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "warning", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "52/14", "CWE": "119/120", "Lang.": "C", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "52/42", "CWE": "129", "Lang.": "C", "Source": "gpt3.5", "Scanner": "semgrep", "Severity": "warning", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "53/13", "CWE": "20", "Lang.": "C++", "Source": "user", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "54/2", "CWE": "126", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "55/22", "CWE": "126", "Lang.": "C", "Source": "gpt4", "Scanner": "flawfinder", "Severity": "note", "GPT-4o Detected": "No", "GPT-4o Fixed": "No"},
+            {"N/L (Results GitHub repository 2025)": "61/1", "CWE": "665", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "cppcheck", "Severity": "warning", "GPT-4o Detected": "No", "GPT-4o Fixed": "Yes"},
+            {"N/L (Results GitHub repository 2025)": "62/19", "CWE": "401/665", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "cppcheck", "Severity": "warning", "GPT-4o Detected": "Yes", "GPT-4o Fixed": "Yes"}
+        ],
+        "notes": "Detailed detection and fixing outcomes for GPT-4o on 32 confirmed issues in October 2024. GPT-4o detected 18 (56.25%) and fixed 17 (53.125%)."
+    },
+    {
+        "table_number": 12,
+        "title": "Comparison of security issue detection and fixing results across LLMs (GPT-4, GPT-5, Claude Opus 4) for DevGPT snapshot_20231012 and snapshot_20240514 snapshots",
+        "page": 20,
+        "category": "Quantitative benchmark results",
+        "columns": ["Metric name", "Dataset snapshot_20231012", "Dataset snapshot_20240514", "Total Number", "Percent"],
+        "rows": [
+            {"Metric name": "Files selected for LLM analysis", "Dataset snapshot_20231012": 63, "Dataset snapshot_20240514": 51, "Total Number": 114, "Percent": "-"},
+            {"Metric name": "Scanner detects", "Dataset snapshot_20231012": 73, "Dataset snapshot_20240514": 68, "Total Number": 141, "Percent": "-"},
+            {"Metric name": "Confirmed security issues in these files (manual validation)", "Dataset snapshot_20231012": 28, "Dataset snapshot_20240514": 28, "Total Number": 56, "Percent": "100.00"},
+            {"Metric name": "Files where security issue found", "Dataset snapshot_20231012": 24, "Dataset snapshot_20240514": 24, "Total Number": 48, "Percent": "-"},
+            {"Metric name": "GPT-4.1: Detected issues", "Dataset snapshot_20231012": 23, "Dataset snapshot_20240514": 23, "Total Number": 46, "Percent": "82.14"},
+            {"Metric name": "GPT-4.1: Not detected issues", "Dataset snapshot_20231012": 5, "Dataset snapshot_20240514": 5, "Total Number": 10, "Percent": "17.86"},
+            {"Metric name": "GPT-4.1: Fixed Issues", "Dataset snapshot_20231012": 21, "Dataset snapshot_20240514": 21, "Total Number": 42, "Percent": "75.00"},
+            {"Metric name": "GPT-4.1: Not fixed Issues", "Dataset snapshot_20231012": 7, "Dataset snapshot_20240514": 7, "Total Number": 14, "Percent": "25.00"},
+            {"Metric name": "GPT-5: Detected issues", "Dataset snapshot_20231012": 21, "Dataset snapshot_20240514": 23, "Total Number": 44, "Percent": "78.57"},
+            {"Metric name": "GPT-5: Not detected issues", "Dataset snapshot_20231012": 7, "Dataset snapshot_20240514": 5, "Total Number": 12, "Percent": "21.43"},
+            {"Metric name": "GPT-5: Fixed", "Dataset snapshot_20231012": 22, "Dataset snapshot_20240514": 22, "Total Number": 44, "Percent": "78.57"},
+            {"Metric name": "GPT-5: Not fixed", "Dataset snapshot_20231012": 6, "Dataset snapshot_20240514": 6, "Total Number": 12, "Percent": "21.43"},
+            {"Metric name": "Claude Opus 4: Detected issues", "Dataset snapshot_20231012": 22, "Dataset snapshot_20240514": 23, "Total Number": 45, "Percent": "80.36"},
+            {"Metric name": "Claude Opus 4: Not detected issues", "Dataset snapshot_20231012": 6, "Dataset snapshot_20240514": 5, "Total Number": 11, "Percent": "19.64"},
+            {"Metric name": "Claude Opus 4: Fixed", "Dataset snapshot_20231012": 23, "Dataset snapshot_20240514": 20, "Total Number": 43, "Percent": "76.79"},
+            {"Metric name": "Claude Opus 4: Not fixed", "Dataset snapshot_20231012": 5, "Dataset snapshot_20240514": 8, "Total Number": 13, "Percent": "23.21"}
+        ],
+        "notes": "Overall performance benchmark for September 2025 experiment covering 56 confirmed issues across both snapshots."
+    },
+    {
+        "table_number": 13,
+        "title": "Security issues detection and fixing in source code from DevGPT snapshot 'snapshot_20231012', September 2025",
+        "page": 21,
+        "category": "Experimental results",
+        "columns": ["N/L", "CWE", "Lang.", "Source", "Scanner", "Severity", "GPT-4.1 Dt", "GPT-4.1 Fx", "GPT-5 Dt", "GPT-5 Fx", "Opus 4.1 Dt", "Opus 4.1 Fx"],
+        "rows": [
+            {"N/L": "1/1a", "CWE": "772", "Lang.": "C", "Source": "gpt3.5", "Scanner": "snyk", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "No", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "No", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "1/1b", "CWE": "362", "Lang.": "C", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "3/29", "CWE": "20", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "snyk", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "4/101", "CWE": "20", "Lang.": "C", "Source": "gpt4", "Scanner": "snyk", "Severity": "warning", "GPT-4.1 Dt": "No", "GPT-4.1 Fx": "No", "GPT-5 Dt": "No", "GPT-5 Fx": "No", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "No"},
+            {"N/L": "5/63", "CWE": "20", "Lang.": "C#", "Source": "user", "Scanner": "snyk", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "6/8", "CWE": "190", "Lang.": "C", "Source": "user", "Scanner": "snyk", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "7/39", "CWE": "20", "Lang.": "C++", "Source": "llm", "Scanner": "snyk", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "8/36", "CWE": "20", "Lang.": "C", "Source": "gpt4", "Scanner": "snyk, semgrep", "Severity": "warning", "GPT-4.1 Dt": "No", "GPT-4.1 Fx": "No", "GPT-5 Dt": "No", "GPT-5 Fx": "No", "Opus 4.1 Dt": "No", "Opus 4.1 Fx": "No"},
+            {"N/L": "9/9", "CWE": "20/120", "Lang.": "C", "Source": "gpt3.5", "Scanner": "semgrep, flawfinder", "Severity": "error, warninig", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "No", "Opus 4.1 Fx": "No"},
+            {"N/L": "10/42", "CWE": "319", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "semgrep", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "11/40", "CWE": "22", "Lang.": "C#", "Source": "user", "Scanner": "semgrep", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "12/36", "CWE": "20", "Lang.": "C", "Source": "user", "Scanner": "semgrep", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "13/49", "CWE": "20", "Lang.": "C", "Source": "user", "Scanner": "semgrep", "Severity": "warning", "GPT-4.1 Dt": "No", "GPT-4.1 Fx": "No", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "No", "Opus 4.1 Fx": "No"},
+            {"N/L": "14/14", "CWE": "119/120", "Lang.": "C", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "No", "GPT-5 Dt": "No", "GPT-5 Fx": "No", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "14/63", "CWE": "129", "Lang.": "C", "Source": "gpt3.5", "Scanner": "semgrep", "Severity": "warning", "GPT-4.1 Dt": "No", "GPT-4.1 Fx": "No", "GPT-5 Dt": "No", "GPT-5 Fx": "No", "Opus 4.1 Dt": "No", "Opus 4.1 Fx": "No"},
+            {"N/L": "18/83", "CWE": "120", "Lang.": "C", "Source": "user", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "20/16", "CWE": "78", "Lang.": "C", "Source": "user", "Scanner": "flawfinder", "Severity": "error", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "22/7", "CWE": "120/20", "Lang.": "C++", "Source": "user", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "23/9", "CWE": "120/20", "Lang.": "C++", "Source": "user", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "48/23", "CWE": "362", "Lang.": "C++", "Source": "gpt4", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "49/9", "CWE": "61", "Lang.": "C", "Source": "gpt3.5", "Scanner": "cppcheck", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "49/27", "CWE": "203/385", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "52/14", "CWE": "119/120", "Lang.": "C", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "No", "GPT-5 Dt": "No", "GPT-5 Fx": "No", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "52/42", "CWE": "129", "Lang.": "C", "Source": "gpt3.5", "Scanner": "semgrep", "Severity": "warning", "GPT-4.1 Dt": "No", "GPT-4.1 Fx": "No", "GPT-5 Dt": "No", "GPT-5 Fx": "No", "Opus 4.1 Dt": "No", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "53/13", "CWE": "20", "Lang.": "C++", "Source": "user", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "54/2", "CWE": "126", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "61/1", "CWE": "665", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "cppcheck", "Severity": "warninig", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "62/19", "CWE": "401/665", "Lang.": "C++", "Source": "user", "Scanner": "cppcheck", "Severity": "warninig", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"}
+        ],
+        "notes": "28 issues in snapshot_20231012 tested with GPT-4.1, GPT-5, and Claude Opus 4.1 in September 2025. Dt=Detected, Fx=Fixed."
+    },
+    {
+        "table_number": 14,
+        "title": "Security issues detection and fixing in source code from DevGPT snapshot 'snapshot_20240514', September 2025",
+        "page": 22,
+        "category": "Experimental results",
+        "columns": ["N/L", "CWE", "Lang.", "Source", "Scanner", "Severity", "GPT-4.1 Dt", "GPT-4.1 Fx", "GPT-5 Dt", "GPT-5 Fx", "Opus 4.1 Dt", "Opus 4.1 Fx"],
+        "rows": [
+            {"N/L": "1/57", "CWE": "119/120", "Lang.": "C", "Source": "user", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "No", "GPT-5 Dt": "No", "GPT-5 Fx": "No", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "1/65", "CWE": "686", "Lang.": "C", "Source": "user", "Scanner": "cppcheck", "Severity": "warning", "GPT-4.1 Dt": "No", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "No", "Opus 4.1 Fx": "No"},
+            {"N/L": "1/132", "CWE": "663", "Lang.": "C", "Source": "user", "Scanner": "semgrep", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "No", "Opus 4.1 Fx": "No"},
+            {"N/L": "2/7", "CWE": "686", "Lang.": "C++", "Source": "user", "Scanner": "cppcheck", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "3/7", "CWE": "665", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "3/11", "CWE": "119/120", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "cppcheck", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "4/78", "CWE": "22", "Lang.": "C++", "Source": "user", "Scanner": "flawfinder, semgrep, snyk", "Severity": "warning", "GPT-4.1 Dt": "No", "GPT-4.1 Fx": "No", "GPT-5 Dt": "No", "GPT-5 Fx": "No", "Opus 4.1 Dt": "No", "Opus 4.1 Fx": "No"},
+            {"N/L": "5/25", "CWE": "362", "Lang.": "C++", "Source": "user", "Scanner": "flawfinder, snyk", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "6/78", "CWE": "22", "Lang.": "C++", "Source": "user", "Scanner": "flawfinder, semgrep, snyk", "Severity": "warning", "GPT-4.1 Dt": "No", "GPT-4.1 Fx": "No", "GPT-5 Dt": "No", "GPT-5 Fx": "No", "Opus 4.1 Dt": "No", "Opus 4.1 Fx": "No"},
+            {"N/L": "7/81", "CWE": "120", "Lang.": "C", "Source": "gpt3.5", "Scanner": "snyk", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "8/82", "CWE": "120", "Lang.": "C", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "9/23", "CWE": "20", "Lang.": "C", "Source": "gpt4", "Scanner": "semgrep, snyk", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "10/37", "CWE": "20", "Lang.": "C", "Source": "user", "Scanner": "semgrep, snyk", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "11/11", "CWE": "328", "Lang.": "C#", "Source": "user", "Scanner": "semgrep", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "12/23", "CWE": "362", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "12/25", "CWE": "252", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "snyk", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "13/13", "CWE": "20", "Lang.": "C", "Source": "user", "Scanner": "snyk", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "15/17", "CWE": "252", "Lang.": "C", "Source": "gpt4", "Scanner": "snyk", "Severity": "error", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "19/18", "CWE": "20", "Lang.": "C++", "Source": "user", "Scanner": "snyk", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "23/27", "CWE": "190", "Lang.": "C++", "Source": "user", "Scanner": "cppcheck", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "27/83", "CWE": "561", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "cppcheck", "Severity": "warning", "GPT-4.1 Dt": "No", "GPT-4.1 Fx": "No", "GPT-5 Dt": "No", "GPT-5 Fx": "No", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "No"},
+            {"N/L": "28/7", "CWE": "1164", "Lang.": "C", "Source": "user", "Scanner": "cppcheck", "Severity": "warning", "GPT-4.1 Dt": "No", "GPT-4.1 Fx": "No", "GPT-5 Dt": "No", "GPT-5 Fx": "No", "Opus 4.1 Dt": "No", "Opus 4.1 Fx": "No"},
+            {"N/L": "31/53", "CWE": "327", "Lang.": "C++", "Source": "user", "Scanner": "flawfinder", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "39/61", "CWE": "120", "Lang.": "C", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "No", "GPT-5 Dt": "Yes", "GPT-5 Fx": "No", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "No"},
+            {"N/L": "40/8", "CWE": "362", "Lang.": "C", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "42/15", "CWE": "362", "Lang.": "C++", "Source": "gpt4", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"},
+            {"N/L": "43/4", "CWE": "362", "Lang.": "C++", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "note", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "No", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "No"},
+            {"N/L": "47/36", "CWE": "327", "Lang.": "C", "Source": "gpt3.5", "Scanner": "flawfinder", "Severity": "warning", "GPT-4.1 Dt": "Yes", "GPT-4.1 Fx": "Yes", "GPT-5 Dt": "Yes", "GPT-5 Fx": "Yes", "Opus 4.1 Dt": "Yes", "Opus 4.1 Fx": "Yes"}
+        ],
+        "notes": "28 issues in snapshot_20240514 tested with GPT-4.1, GPT-5, and Claude Opus 4.1 in September 2025. Dt=Detected, Fx=Fixed."
+    },
+    {
+        "table_number": 15,
+        "title": "Detection matrix for DevGPT snapshot 'snapshot_20231012'",
+        "page": 23,
+        "category": "Experimental results",
+        "columns": ["Issue (Results GitHub repository 2025)", "CWE", "Lang", "Severity", "S", "Sg", "F", "C", "G-4.1", "G-5", "Opus"],
+        "rows": [
+            {"Issue (Results GitHub repository 2025)": "1/1a", "CWE": "772", "Lang": "C", "Severity": "note", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "×", "Opus": "×"},
+            {"Issue (Results GitHub repository 2025)": "1/1b", "CWE": "362", "Lang": "C", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "3/29", "CWE": "20", "Lang": "C++", "Severity": "warning", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "4/101", "CWE": "20", "Lang": "C", "Severity": "warning", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4.1": "×", "G-5": "×", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "5/63", "CWE": "20", "Lang": "C#", "Severity": "warning", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "6/8", "CWE": "190", "Lang": "C", "Severity": "warning", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "7/39", "CWE": "20", "Lang": "C++", "Severity": "warning", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "8/36", "CWE": "20", "Lang": "C", "Severity": "warning", "S": "✓", "Sg": "✓", "F": "×", "C": "×", "G-4.1": "×", "G-5": "×", "Opus": "×"},
+            {"Issue (Results GitHub repository 2025)": "9/9", "CWE": "20/120", "Lang": "C", "Severity": "error", "S": "×", "Sg": "✓", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "×"},
+            {"Issue (Results GitHub repository 2025)": "10/42", "CWE": "319", "Lang": "C++", "Severity": "warning", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "11/40", "CWE": "22", "Lang": "C#", "Severity": "warning", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "12/36", "CWE": "20", "Lang": "C", "Severity": "warning", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "13/49", "CWE": "20", "Lang": "C", "Severity": "warning", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4.1": "×", "G-5": "✓", "Opus": "×"},
+            {"Issue (Results GitHub repository 2025)": "14/14", "CWE": "119/120", "Lang": "C", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "×", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "14/63", "CWE": "129", "Lang": "C", "Severity": "warning", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4.1": "×", "G-5": "×", "Opus": "×"},
+            {"Issue (Results GitHub repository 2025)": "18/83", "CWE": "120", "Lang": "C", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "20/16", "CWE": "78", "Lang": "C", "Severity": "error", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "22/7", "CWE": "120/20", "Lang": "C++", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "23/9", "CWE": "120/20", "Lang": "C++", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "48/23", "CWE": "362", "Lang": "C++", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "49/9", "CWE": "61", "Lang": "C", "Severity": "note", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "49/27", "CWE": "203/385", "Lang": "C++", "Severity": "warning", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "52/14", "CWE": "119/120", "Lang": "C", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "×", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "52/42", "CWE": "129", "Lang": "C", "Severity": "warning", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4.1": "×", "G-5": "×", "Opus": "×"},
+            {"Issue (Results GitHub repository 2025)": "53/13", "CWE": "20", "Lang": "C++", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "54/2", "CWE": "126", "Lang": "C++", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "61/1", "CWE": "665", "Lang": "C++", "Severity": "warning", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "62/19", "CWE": "401/665", "Lang": "C++", "Severity": "warning", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"}
+        ],
+        "notes": "Detection comparison across static scanners and 2025 LLMs for snapshot_20231012 issues."
+    },
+    {
+        "table_number": 16,
+        "title": "Detection matrix for DevGPT snapshot 'snapshot_20240514'",
+        "page": 24,
+        "category": "Experimental results",
+        "columns": ["Issue (Results GitHub repository 2025)", "CWE", "Lang", "Severity", "S", "Sg", "F", "C", "G-4.1", "G-5", "Opus"],
+        "rows": [
+            {"Issue (Results GitHub repository 2025)": "1/57", "CWE": "119/120", "Lang": "C", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "×", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "1/65", "CWE": "686", "Lang": "C", "Severity": "warning", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4.1": "×", "G-5": "✓", "Opus": "×"},
+            {"Issue (Results GitHub repository 2025)": "1/132", "CWE": "663", "Lang": "C", "Severity": "warning", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "×"},
+            {"Issue (Results GitHub repository 2025)": "2/7", "CWE": "686", "Lang": "C++", "Severity": "warning", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "3/7", "CWE": "665", "Lang": "C++", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "3/11", "CWE": "119/120", "Lang": "C++", "Severity": "warning", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "4/78", "CWE": "22", "Lang": "C++", "Severity": "warning", "S": "✓", "Sg": "✓", "F": "✓", "C": "×", "G-4.1": "×", "G-5": "×", "Opus": "×"},
+            {"Issue (Results GitHub repository 2025)": "5/25", "CWE": "362", "Lang": "C++", "Severity": "warning", "S": "✓", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "6/78", "CWE": "22", "Lang": "C++", "Severity": "warning", "S": "✓", "Sg": "✓", "F": "✓", "C": "×", "G-4.1": "×", "G-5": "×", "Opus": "×"},
+            {"Issue (Results GitHub repository 2025)": "7/81", "CWE": "120", "Lang": "C", "Severity": "warning", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "8/82", "CWE": "120", "Lang": "C", "Severity": "warning", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "9/23", "CWE": "20", "Lang": "C", "Severity": "warning", "S": "✓", "Sg": "✓", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "10/37", "CWE": "20", "Lang": "C", "Severity": "note", "S": "✓", "Sg": "✓", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "11/11", "CWE": "328", "Lang": "C#", "Severity": "warning", "S": "×", "Sg": "✓", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "12/23", "CWE": "362", "Lang": "C++", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "12/25", "CWE": "252", "Lang": "C++", "Severity": "warning", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "13/13", "CWE": "20", "Lang": "C", "Severity": "warning", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "15/17", "CWE": "252", "Lang": "C", "Severity": "error", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "19/18", "CWE": "20", "Lang": "C++", "Severity": "warning", "S": "✓", "Sg": "×", "F": "×", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "23/27", "CWE": "190", "Lang": "C++", "Severity": "warning", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "27/83", "CWE": "561", "Lang": "C++", "Severity": "warning", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4.1": "×", "G-5": "×", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "28/7", "CWE": "1164", "Lang": "C", "Severity": "warning", "S": "×", "Sg": "×", "F": "×", "C": "✓", "G-4.1": "×", "G-5": "×", "Opus": "×"},
+            {"Issue (Results GitHub repository 2025)": "31/53", "CWE": "327", "Lang": "C++", "Severity": "warning", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "39/61", "CWE": "120", "Lang": "C", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "40/8", "CWE": "362", "Lang": "C", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "42/15", "CWE": "362", "Lang": "C++", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "43/4", "CWE": "362", "Lang": "C++", "Severity": "note", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"},
+            {"Issue (Results GitHub repository 2025)": "47/36", "CWE": "327", "Lang": "C", "Severity": "warning", "S": "×", "Sg": "×", "F": "✓", "C": "×", "G-4.1": "✓", "G-5": "✓", "Opus": "✓"}
+        ],
+        "notes": "Detection comparison across static scanners and 2025 LLMs for snapshot_20240514 issues."
+    },
+    {
+        "table_number": 17,
+        "title": "Comparison of security issue detection and fixing results for user provided code across LLMs (GPT-4, GPT-5, Claude Opus 4) for DevGPT snapshot_20231012 and snapshot_20240514 snapshots",
+        "page": 31,
+        "category": "Quantitative benchmark results",
+        "columns": ["Metric name", "Dataset snapshot 20231012", "Dataset snapshot 20240514", "Total Number", "Overall Percent"],
+        "rows": [
+            {"Metric name": "Confirmed security issues", "Dataset snapshot 20231012": 11, "Dataset snapshot 20240514": 14, "Total Number": 25, "Overall Percent": "100.00"},
+            {"Metric name": "Files where security issue found", "Dataset snapshot 20231012": 11, "Dataset snapshot 20240514": 12, "Total Number": 23, "Overall Percent": "-"},
+            {"Metric name": "GPT-4.1: Detected issues", "Dataset snapshot 20231012": 10, "Dataset snapshot 20240514": 12, "Total Number": 22, "Overall Percent": "88.00"},
+            {"Metric name": "GPT-4.1: Not detected issues", "Dataset snapshot 20231012": 1, "Dataset snapshot 20240514": 2, "Total Number": 3, "Overall Percent": "12.00"},
+            {"Metric name": "GPT-4.1: Fixed Issues", "Dataset snapshot 20231012": 10, "Dataset snapshot 20240514": 12, "Total Number": 22, "Overall Percent": "88.00"},
+            {"Metric name": "GPT-4.1: Not fixed Issues", "Dataset snapshot 20231012": 1, "Dataset snapshot 20240514": 2, "Total Number": 3, "Overall Percent": "90.91", "source_note": "Typo in paper Table 17: paper prints 90.91% for Not fixed Issues (should be 12.00%, or was 1/11=90.91% inverted). Stored with original and note."},
+            {"Metric name": "GPT-5: Detected issues", "Dataset snapshot 20231012": 11, "Dataset snapshot 20240514": 10, "Total Number": 21, "Overall Percent": "84.00"},
+            {"Metric name": "GPT-5: Not detected issues", "Dataset snapshot 20231012": 0, "Dataset snapshot 20240514": 4, "Total Number": 4, "Overall Percent": "16.00"},
+            {"Metric name": "GPT-5: Fixed", "Dataset snapshot 20231012": 11, "Dataset snapshot 20240514": 10, "Total Number": 21, "Overall Percent": "84.00"},
+            {"Metric name": "GPT-5: Not fixed", "Dataset snapshot 20231012": 0, "Dataset snapshot 20240514": 4, "Total Number": 4, "Overall Percent": "16.00"},
+            {"Metric name": "Claude Opus 4: Detected issues", "Dataset snapshot 20231012": 10, "Dataset snapshot 20240514": 9, "Total Number": 19, "Overall Percent": "76.00"},
+            {"Metric name": "Claude Opus 4: Not detected issues", "Dataset snapshot 20231012": 1, "Dataset snapshot 20240514": 5, "Total Number": 6, "Overall Percent": "24.00"},
+            {"Metric name": "Claude Opus 4: Fixed", "Dataset snapshot 20231012": 10, "Dataset snapshot 20240514": 9, "Total Number": 19, "Overall Percent": "76.00"},
+            {"Metric name": "Claude Opus 4: Not fixed", "Dataset snapshot 20231012": 1, "Dataset snapshot 20240514": 5, "Total Number": 6, "Overall Percent": "24.00"}
+        ],
+        "notes": "User-provided code evaluation: 25 confirmed vulnerabilities across 23 files."
+    },
+    {
+        "table_number": 18,
+        "title": "Comparison of security issue detection and fixing results for GPT generated code across LLMs (GPT-4, GPT-5, Claude Opus 4) for DevGPT snapshot_20231012 and snapshot_20240514 snapshots",
+        "page": 32,
+        "category": "Quantitative benchmark results",
+        "columns": ["Metric name", "Dataset snapshot 20231012", "Dataset snapshot 20240514", "Total Number", "Overall Percent"],
+        "rows": [
+            {"Metric name": "Confirmed security issues", "Dataset snapshot 20231012": 17, "Dataset snapshot 20240514": 14, "Total Number": 31, "Overall Percent": "100.00"},
+            {"Metric name": "Files where security issue found", "Dataset snapshot 20231012": 13, "Dataset snapshot 20240514": 12, "Total Number": 25, "Overall Percent": "-"},
+            {"Metric name": "GPT-4.1: Detected issues", "Dataset snapshot 20231012": 13, "Dataset snapshot 20240514": 13, "Total Number": 26, "Overall Percent": "83.87"},
+            {"Metric name": "GPT-4.1: Not detected issues", "Dataset snapshot 20231012": 4, "Dataset snapshot 20240514": 1, "Total Number": 5, "Overall Percent": "16.13"},
+            {"Metric name": "GPT-4.1: Fixed Issues", "Dataset snapshot 20231012": 12, "Dataset snapshot 20240514": 11, "Total Number": 23, "Overall Percent": "74.19"},
+            {"Metric name": "GPT-4.1: Not fixed Issues", "Dataset snapshot 20231012": 5, "Dataset snapshot 20240514": 3, "Total Number": 8, "Overall Percent": "25.81"},
+            {"Metric name": "GPT-5: Detected issues", "Dataset snapshot 20231012": 10, "Dataset snapshot 20240514": 13, "Total Number": 23, "Overall Percent": "74.19"},
+            {"Metric name": "GPT-5: Not detected issues", "Dataset snapshot 20231012": 7, "Dataset snapshot 20240514": 1, "Total Number": 8, "Overall Percent": "25.81"},
+            {"Metric name": "GPT-5: Fixed", "Dataset snapshot 20231012": 11, "Dataset snapshot 20240514": 12, "Total Number": 23, "Overall Percent": "74.19"},
+            {"Metric name": "GPT-5: Not fixed", "Dataset snapshot 20231012": 6, "Dataset snapshot 20240514": 2, "Total Number": 8, "Overall Percent": "25.81"},
+            {"Metric name": "Claude Opus 4: Detected issues", "Dataset snapshot 20231012": 12, "Dataset snapshot 20240514": 14, "Total Number": 26, "Overall Percent": "83.87"},
+            {"Metric name": "Claude Opus 4: Not detected issues", "Dataset snapshot 20231012": 5, "Dataset snapshot 20240514": 0, "Total Number": 5, "Overall Percent": "16.13"},
+            {"Metric name": "Claude Opus 4: Fixed", "Dataset snapshot 20231012": 14, "Dataset snapshot 20240514": 11, "Total Number": 25, "Overall Percent": "80.65"},
+            {"Metric name": "Claude Opus 4: Not fixed", "Dataset snapshot 20231012": 3, "Dataset snapshot 20240514": 3, "Total Number": 6, "Overall Percent": "19.35"}
+        ],
+        "notes": "GPT-generated code evaluation: 31 confirmed vulnerabilities across 25 files."
+    }
+]
+
+def main():
+    os.makedirs("data", exist_ok=True)
+    
+    # Save JSON
+    json_path = os.path.join("data", "paper_benchmarks.json")
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(TABLES, f, indent=2, ensure_ascii=False)
+    print(f"Saved {len(TABLES)} benchmark tables to {json_path}")
+    
+    # Save CSV (flattened records)
+    csv_path = os.path.join("data", "paper_benchmarks.csv")
+    flattened_rows = []
+    for table in TABLES:
+        t_num = table["table_number"]
+        t_title = table["title"]
+        t_page = table["page"]
+        t_cat = table["category"]
+        for idx, row in enumerate(table["rows"]):
+            record = {
+                "table_number": t_num,
+                "table_title": t_title,
+                "source_page": t_page,
+                "category": t_cat,
+                "row_index": idx + 1,
+                "row_data": json.dumps(row, ensure_ascii=False)
+            }
+            # extract key metrics if present
+            if "Metric name" in row or "Metric" in row:
+                record["metric_name"] = row.get("Metric name") or row.get("Metric")
+            elif "CWE" in row:
+                record["metric_name"] = f"CWE {row.get('CWE')}"
+            elif "Scanner" in row:
+                record["metric_name"] = f"Scanner {row.get('Scanner')}"
+            elif "Issue (Results GitHub repository 2025)" in row or "N/L" in row:
+                record["metric_name"] = f"Issue {row.get('Issue (Results GitHub repository 2025)') or row.get('N/L')}"
+            elif "Programming language" in row or "Language" in row:
+                record["metric_name"] = f"Language {row.get('Programming language') or row.get('Language')}"
+            elif "Paper" in row:
+                record["metric_name"] = f"Paper {row.get('Paper')}"
+            else:
+                record["metric_name"] = f"Record {idx + 1}"
+            flattened_rows.append(record)
+
+    fieldnames = ["table_number", "table_title", "source_page", "category", "row_index", "metric_name", "row_data"]
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(flattened_rows)
+    print(f"Saved {len(flattened_rows)} flattened benchmark records to {csv_path}")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,11 @@
+relative_path,filename,snapshot,folder,language,extension,total_lines,code_lines,blank_lines,comment_lines,sha256
+snapshot_20231012/File_04/Code_001.c,Code_001.c,snapshot_20231012,File_04,C,.c,16,13,2,1,cc7fa1b4faea899a47af79221508b19a5132d858ba5538eac4c642785656dd15
+snapshot_20231012/File_05/Code_001.cs,Code_001.cs,snapshot_20231012,File_05,C#,.cs,15,12,2,1,b0d89bac46be23dcf68b14146758556169c8e7a3764f68d639f3a82f534ec7bc
+snapshot_20231012/File_10/Code_001.cpp,Code_001.cpp,snapshot_20231012,File_10,C++,.cpp,20,16,4,0,c82c71866da3bb603a976f9c7799df7e382665290097f1f6803d29b0b35005f4
+snapshot_20231012/File_20/Code_001.cpp,Code_001.cpp,snapshot_20231012,File_20,C++,.cpp,21,18,2,1,c0e2f98e39f674a52de53cbcea8a96e23a43a02713495a397ed04cfd4e5529fa
+snapshot_20231012/File_55/Code_001.c,Code_001.c,snapshot_20231012,File_55,C,.c,12,10,1,1,a2017c9f0c746cdca6334408654df64ec145c417ba0e25aec693413a8f38a364
+snapshot_20231012/File_61/Code_002.cpp,Code_002.cpp,snapshot_20231012,File_61,C++,.cpp,17,13,3,1,1300983d49cfbd34e6f3493718e3748efe7ba8092c3216817ab8a9c31300bfc0
+snapshot_20240514/File_07/Code_001.c,Code_001.c,snapshot_20240514,File_07,C,.c,8,6,1,1,a74b1beeeb1774a11808c4f07bd5c934eaca51146905bd7d9e44ed4f3ca29287
+snapshot_20240514/File_11/Code_001.cs,Code_001.cs,snapshot_20240514,File_11,C#,.cs,15,13,1,1,5a943c32c07c2e9e0378815c29fbbb20d1572c0425ae9e22a501d2a34e99f929
+snapshot_20240514/File_16/Code_001.c,Code_001.c,snapshot_20240514,File_16,C,.c,7,5,1,1,3102bd7e94aa1660095352047a1380d5b563644e5d79fcb81200ba416cd27c05
+snapshot_20240514/File_47/Code_001.cpp,Code_001.cpp,snapshot_20240514,File_47,C++,.cpp,9,7,1,1,008b1c5b1952e06a2b4b30ba578d6f72f5934d1d6e9d0f676b28cf030b1cd054

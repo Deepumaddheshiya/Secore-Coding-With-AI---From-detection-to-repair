@@ -1,0 +1,11 @@
+id,relative_path,filename,language,snapshot,code_lines,total_lines
+1,snapshot_20231012/File_04/Code_001.c,Code_001.c,c,snapshot_20231012,13,16
+2,snapshot_20231012/File_05/Code_001.cs,Code_001.cs,csharp,snapshot_20231012,12,15
+3,snapshot_20231012/File_10/Code_001.cpp,Code_001.cpp,cpp,snapshot_20231012,16,20
+4,snapshot_20231012/File_20/Code_001.cpp,Code_001.cpp,cpp,snapshot_20231012,18,21
+5,snapshot_20231012/File_55/Code_001.c,Code_001.c,c,snapshot_20231012,10,12
+6,snapshot_20231012/File_61/Code_002.cpp,Code_002.cpp,cpp,snapshot_20231012,13,17
+7,snapshot_20240514/File_07/Code_001.c,Code_001.c,c,snapshot_20240514,6,8
+8,snapshot_20240514/File_11/Code_001.cs,Code_001.cs,csharp,snapshot_20240514,13,15
+9,snapshot_20240514/File_16/Code_001.c,Code_001.c,c,snapshot_20240514,5,7
+10,snapshot_20240514/File_47/Code_001.cpp,Code_001.cpp,cpp,snapshot_20240514,7,9

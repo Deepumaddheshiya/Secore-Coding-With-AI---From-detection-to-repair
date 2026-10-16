@@ -1,0 +1,9 @@
+metric,paper_value,local_value,absolute_difference,comparable,notes
+Total Source Files Evaluated,2315,10,-2305,False,"Full DevGPT analysis in paper analyzed 2,315 C-family files. Local system operates on loaded dataset directory."
+Total Lines of Code (LOC),44943,113,-44830,False,"Paper calculated code lines using cloc tool across C, C++, and C# files."
+Flawfinder Detections,679,15,-664,False,"Paper Table 6 reports 679 Flawfinder detections (20 errors, 23 warnings, 633 notes/info)."
+Snyk Detections,153,0,-153,False,"Snyk requires account authentication. In local offline execution, marked unavailable per strict No-API-Key policy unless authenticated."
+Semgrep Detections,56,0,-56,False,"Paper Table 6 reports 56 Semgrep warnings across 2,315 files."
+Cppcheck Detections,71,0,-71,False,Paper Table 6 reports 71 Cppcheck warnings.
+Confirmed Vulnerabilities,56,1,-55,False,Paper confirmed 56 genuine vulnerabilities across 48 files after expert manual review of 114 candidate files.
+Automated Repair Fix Rate (%),75.0% - 78.6% (GPT-4.1 / GPT-5 / Opus 4.1),63.64%,,False,"Paper evaluated cloud frontier models (GPT-4.1, GPT-5, Claude Opus 4.1). Local system operates via deterministic rule-based repair or local Ollama."

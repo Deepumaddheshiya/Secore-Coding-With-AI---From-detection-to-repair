@@ -1,0 +1,16 @@
+id,finding_uuid,scanner,rule_id,file_path,line_number,severity,cwe_id,message
+1,flawfinder-264749bb3b8f,Flawfinder,FF1001,snapshot_20240514/File_16/Code_001.c,7,error,CWE-120,Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).
+2,flawfinder-2508ae05f480,Flawfinder,FF1044,snapshot_20240514/File_47/Code_001.cpp,17,error,CWE-78,This causes a new program to execute and is difficult to use safely (CWE-78).
+3,flawfinder-bbb3475a0c7f,Flawfinder,FF1015,snapshot_20240514/File_16/Code_001.c,6,error,CWE-120,Does not check for buffer overflows (CWE-120).
+4,flawfinder-32714f442b41,Flawfinder,FF1048,snapshot_20240514/File_47/Code_001.cpp,6,warning,CWE-327,This function is not sufficiently random for security-related functions such as key and nonce creation (CWE-327).
+5,flawfinder-98a985bf971f,Flawfinder,FF1013,snapshot_20240514/File_16/Code_001.c,5,warning,CWE-120,"Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120)."
+6,flawfinder-41b73f5a1042,Flawfinder,FF1004,snapshot_20240514/File_47/Code_001.cpp,15,warning,CWE-120,Does not check for buffer overflows when copying to destination (CWE-120).
+7,flawfinder-45da9e2d94b2,Flawfinder,FF1013,snapshot_20240514/File_16/Code_001.c,4,warning,CWE-120,"Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120)."
+8,flawfinder-7038e675972e,Flawfinder,FF1022,snapshot_20240514/File_16/Code_001.c,8,note/info,CWE-126,Does not handle strings that are not \0-terminated; if given one it may perform an over-read (it could cause a crash if unprotected) (CWE-126).
+9,flawfinder-1fedef710246,Flawfinder,FF1001,snapshot_20231012/File_04/Code_001.c,7,error,CWE-120,Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).
+10,flawfinder-4fbb5c0880cd,Flawfinder,FF1044,snapshot_20231012/File_20/Code_001.cpp,17,error,CWE-78,This causes a new program to execute and is difficult to use safely (CWE-78).
+11,flawfinder-ff4bcf770a83,Flawfinder,FF1015,snapshot_20240514/File_07/Code_001.c,6,error,CWE-120,Does not check for buffer overflows (CWE-120).
+12,flawfinder-24a63714f0c1,Flawfinder,FF1013,snapshot_20231012/File_04/Code_001.c,5,warning,CWE-120,"Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120)."
+13,flawfinder-b6e934174018,Flawfinder,FF1004,snapshot_20231012/File_10/Code_001.cpp,15,warning,CWE-120,Does not check for buffer overflows when copying to destination (CWE-120).
+14,flawfinder-5e75d9b08699,Flawfinder,FF1013,snapshot_20240514/File_07/Code_001.c,4,warning,CWE-120,"Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120)."
+15,flawfinder-77838ca3f213,Flawfinder,FF1022,snapshot_20231012/File_55/Code_001.c,8,note/info,CWE-126,Does not handle strings that are not \0-terminated; if given one it may perform an over-read (it could cause a crash if unprotected) (CWE-126).

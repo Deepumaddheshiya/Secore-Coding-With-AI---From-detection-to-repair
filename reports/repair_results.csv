@@ -1,0 +1,12 @@
+id,finding_id,engine_type,model_name,status,rescan_passed
+1,1,rule_based,,applied,True
+2,2,rule_based,,applied,True
+3,3,rule_based,,rolled_back,True
+4,1,rule_based,,proposed,
+5,1,rule_based,,rolled_back,True
+6,2,rule_based,,proposed,
+7,1,rule_based,,applied,True
+8,2,rule_based,,applied,True
+9,3,rule_based,,applied,True
+10,1,rule_based,,proposed,
+11,7,rule_based,,proposed,
